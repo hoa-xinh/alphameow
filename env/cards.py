@@ -18,9 +18,9 @@ CARD_TYPES = {
 DECK_COUNTS = {
     "EXPLODING_KITTEN": 1,   # scales with player count later
     "DEFUSE":           6,   # 1 per player + extras
-    "ATTACK":           4,
+    "ATTACK":           15,
     "NOPE":             5,
-    "SKIP":             5,
+    "SKIP":             15,
     "SHUFFLE":          4,
     "SEE_THE_FUTURE":   5,
     "FAVOR":            4,
