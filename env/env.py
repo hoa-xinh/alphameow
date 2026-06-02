@@ -4,8 +4,8 @@ import numpy as np
 from .state import encode_state, get_observation_space, STATE_SIZE
 from .action_space import get_action_space, get_legal_actions, NUM_ACTIONS
 from .cards import CARD_TYPES, DECK_COUNTS
-from .rules import apply_action      # ← Partner writes this
-from .rewards import calculate_reward  # ← Partner writes this
+from .rules import apply_action      
+from .rewards import calculate_reward  
 
 class ExplodingKittensEnv(gym.Env):
     metadata = {"render_modes": ["human"]}
@@ -32,7 +32,6 @@ class ExplodingKittensEnv(gym.Env):
             obs = encode_state(self.game_state)
             return obs, -1.0, False, False, {"error": "illegal_action"}
 
-        # Partner's apply_action mutates game_state and returns event log
         event = apply_action(self.game_state, action)
 
         reward = calculate_reward(self.game_state, event)

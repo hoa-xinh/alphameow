@@ -1,4 +1,4 @@
-# cards.py — written by Partner, spec'd by you
+# cards.py 
 CARD_TYPES = {
     "EXPLODING_KITTEN": 0,
     "DEFUSE":           1,

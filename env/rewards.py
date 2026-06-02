@@ -1,5 +1,5 @@
 # rewards.py
-# Partner writes calculate_reward()
+# writes calculate_reward()
 # It receives game_state (after mutation) and the event string
 # Returns a float reward signal
 
