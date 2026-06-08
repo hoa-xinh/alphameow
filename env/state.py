@@ -1,6 +1,6 @@
 # state.py
 import numpy as np
-from gymnasium import spaces
+from .spaces_compat import spaces
 
 # State vector indices — document these clearly for Team Brain
 STATE_INDICES = {
@@ -27,15 +27,16 @@ def get_observation_space():
     return spaces.Box(low=STATE_LOW, high=STATE_HIGH, dtype=np.float32)
 
 def encode_state(game_state: dict) -> np.ndarray:
+    return encode_state_for_player(game_state, game_state["current_player"])
+
+def encode_state_for_player(game_state: dict, player_idx: int) -> np.ndarray:
     """
-    Convert a game_state dict into a fixed-length numpy array for the agent.
-    game_state keys: hand (list of card ints), deck (list), 
-                     opponents (list of hands), attacks_pending (int)
+    Convert a game_state dict into a fixed-length numpy array for a player.
     """
     from collections import Counter
     from .cards import CARD_TYPES
 
-    hand = Counter(game_state["hand"])
+    hand = Counter(game_state["players"][player_idx])
     obs = np.zeros(STATE_SIZE, dtype=np.float32)
 
     obs[0] = hand[CARD_TYPES["DEFUSE"]]
@@ -54,8 +55,18 @@ def encode_state(game_state: dict) -> np.ndarray:
     deck = game_state["deck"]
     obs[8] = len(deck)
     obs[9] = deck.count(CARD_TYPES["EXPLODING_KITTEN"])
-    obs[10] = len(game_state["opponents"])
-    obs[11] = game_state.get("attacks_pending", 0)
-    obs[12] = 1.0 if any(len(o) > 0 for o in game_state["opponents"]) else 0.0
+    alive_players = game_state["alive_players"]
+    obs[10] = sum(1 for idx, alive in enumerate(alive_players) if alive and idx != player_idx)
 
+    if game_state["current_player"] == player_idx:
+        obs[11] = max(0, game_state.get("current_turn_draws_remaining", 1) - 1)
+    else:
+        obs[11] = game_state["pending_extra_draws"][player_idx]
+
+    obs[12] = 1.0 if any(
+        alive and idx != player_idx and len(game_state["players"][idx]) > 0
+        for idx, alive in enumerate(alive_players)
+    ) else 0.0
+
+    obs = obs / STATE_HIGH
     return obs
