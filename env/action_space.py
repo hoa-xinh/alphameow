@@ -1,6 +1,5 @@
 # action_space.py
-from gymnasium import spaces
-import numpy as np
+from .spaces_compat import spaces
 
 ACTIONS = {
     0:  "draw_card",
@@ -21,11 +20,20 @@ NUM_ACTIONS = len(ACTIONS)
 def get_action_space():
     return spaces.Discrete(NUM_ACTIONS)
 
-def get_legal_actions(game_state: dict) -> list[int]:
+def get_legal_actions(game_state: dict, player_idx: int | None = None) -> list[int]:
     from collections import Counter
     from .cards import CARD_TYPES
 
-    hand = Counter(game_state["hand"])
+    if game_state.get("terminated", False):
+        return []
+
+    if player_idx is None:
+        player_idx = game_state["current_player"]
+
+    if player_idx != game_state["current_player"] or not game_state["alive_players"][player_idx]:
+        return []
+
+    hand = Counter(game_state["players"][player_idx])
     legal = []
 
     kitten_just_drawn = game_state.get("kitten_just_drawn", False)
@@ -47,7 +55,10 @@ def get_legal_actions(game_state: dict) -> list[int]:
     if hand[CARD_TYPES["ATTACK"]] > 0:         legal.append(2)
     if hand[CARD_TYPES["SHUFFLE"]] > 0:        legal.append(5)
     if hand[CARD_TYPES["SEE_THE_FUTURE"]] > 0: legal.append(6)
-    if hand[CARD_TYPES["FAVOR"]] > 0 and len(game_state["opponents"]) > 0:
+    if hand[CARD_TYPES["FAVOR"]] > 0 and any(
+        alive and idx != player_idx and len(game_state["players"][idx]) > 0
+        for idx, alive in enumerate(game_state["alive_players"])
+    ):
         legal.append(7)
 
     cat_ids = [8, 9, 10, 11, 12]

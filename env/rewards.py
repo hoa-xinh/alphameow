@@ -3,7 +3,7 @@
 # It receives game_state (after mutation) and the event string
 # Returns a float reward signal
 
-def calculate_reward(game_state: dict, event: str) -> float:
+def calculate_reward(game_state: dict, event: str, acting_player: int) -> float:
     """
     Reward shaping for the DQN agent.
     The goal: survive, win, punish death.
@@ -13,7 +13,7 @@ def calculate_reward(game_state: dict, event: str) -> float:
     if event in ("exploded_no_defuse", "deck_empty_draw_death"):
         return -100.0   # you died
 
-    if game_state["terminated"] and len(game_state["opponents"]) == 0:
+    if game_state["terminated"] and game_state.get("winner") == acting_player:
         return +100.0   # you won! last player standing
 
     # === SURVIVAL REWARDS ===
