@@ -1,5 +1,6 @@
 import pytest
 from env import ExplodingKittensEnv
+from env.rewards import calculate_reward
 
 def test_reset_returns_valid_obs():
     env = ExplodingKittensEnv(num_players=3)
@@ -47,3 +48,17 @@ def test_10_games_no_crash():
             action = random.choice(info["legal_actions"])
             obs, r, terminated, truncated, info = env.step(action)
             done = terminated or truncated
+
+def test_rewards_are_bounded_to_normalized_scale():
+    base_state = {"terminated": False, "winner": None}
+
+    assert calculate_reward(base_state, "drew_safe_card", acting_player=0) == 0.01
+    assert calculate_reward(base_state, "played_attack", acting_player=0) == 0.02
+    assert calculate_reward(base_state, "defused_kitten", acting_player=0) == 0.2
+    assert calculate_reward(base_state, "cat_pair_failed", acting_player=0) == -0.02
+    assert calculate_reward(base_state, "unknown_event", acting_player=0) == 0.001
+
+    terminal_win = {"terminated": True, "winner": 1}
+    terminal_loss = {"terminated": False, "winner": None}
+    assert calculate_reward(terminal_win, "anything", acting_player=1) == 1.0
+    assert calculate_reward(terminal_loss, "exploded_no_defuse", acting_player=0) == -1.0
