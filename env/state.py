@@ -17,10 +17,13 @@ STATE_INDICES = {
     "opponents_alive":      10,
     "attacks_pending":      11,  # how many extra draws are forced on you
     "is_nope_possible":     12,  # 1 if any opponent has cards (can nope)
+    "opponent_hand_size_0": 13,
+    "opponent_hand_size_1": 14,
+    "opponent_hand_size_2": 15,
 }
 
 STATE_SIZE = len(STATE_INDICES)
-STATE_HIGH = np.array([6, 5, 5, 5, 5, 5, 5, 4, 56, 3, 3, 4, 1], dtype=np.float32)
+STATE_HIGH = np.array([6, 5, 5, 5, 5, 5, 5, 4, 56, 3, 3, 4, 1, 12, 12, 12], dtype=np.float32)
 STATE_LOW  = np.zeros(STATE_SIZE, dtype=np.float32)
 
 def get_observation_space():
@@ -67,6 +70,13 @@ def encode_state_for_player(game_state: dict, player_idx: int) -> np.ndarray:
         alive and idx != player_idx and len(game_state["players"][idx]) > 0
         for idx, alive in enumerate(alive_players)
     ) else 0.0
+
+    opponent_indices = [
+        idx for idx in range(len(alive_players))
+        if idx != player_idx
+    ]
+    for slot, opp_idx in enumerate(opponent_indices[:3]):
+        obs[13 + slot] = len(game_state["players"][opp_idx])
 
     obs = obs / STATE_HIGH
     return obs
