@@ -5,7 +5,7 @@ from env.rewards import calculate_reward
 def test_reset_returns_valid_obs():
     env = ExplodingKittensEnv(num_players=3)
     obs, info = env.reset()
-    assert obs.shape == (13,)
+    assert obs.shape == (16,)
     assert "legal_actions" in info
     assert "all_observations" in info
     assert len(info["all_observations"]) == 3
