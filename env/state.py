@@ -20,10 +20,13 @@ STATE_INDICES = {
     "opponent_hand_size_0": 13,
     "opponent_hand_size_1": 14,
     "opponent_hand_size_2": 15,
+    "sf_top1_is_kitten":    16,
+    "sf_top2_is_kitten":    17,
+    "sf_top3_is_kitten":    18,
 }
 
 STATE_SIZE = len(STATE_INDICES)
-STATE_HIGH = np.array([6, 5, 5, 5, 5, 5, 5, 4, 56, 3, 3, 4, 1, 12, 12, 12], dtype=np.float32)
+STATE_HIGH = np.array([6, 5, 5, 5, 5, 5, 5, 4, 56, 3, 3, 4, 1, 12, 12, 12, 1, 1, 1], dtype=np.float32)
 STATE_LOW  = np.zeros(STATE_SIZE, dtype=np.float32)
 
 def get_observation_space():
@@ -77,6 +80,13 @@ def encode_state_for_player(game_state: dict, player_idx: int) -> np.ndarray:
     ]
     for slot, opp_idx in enumerate(opponent_indices[:3]):
         obs[13 + slot] = len(game_state["players"][opp_idx])
+
+    top_three = game_state.get("top_three", [])
+    sf_player = game_state.get("sf_player", None)
+    if top_three and sf_player == player_idx:
+        obs[16] = 1.0 if len(top_three) > 0 and top_three[0] == CARD_TYPES["EXPLODING_KITTEN"] else 0.0
+        obs[17] = 1.0 if len(top_three) > 1 and top_three[1] == CARD_TYPES["EXPLODING_KITTEN"] else 0.0
+        obs[18] = 1.0 if len(top_three) > 2 and top_three[2] == CARD_TYPES["EXPLODING_KITTEN"] else 0.0
 
     obs = obs / STATE_HIGH
     return obs

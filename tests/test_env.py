@@ -1,11 +1,14 @@
 import pytest
 from env import ExplodingKittensEnv
+from env.cards import CARD_TYPES
 from env.rewards import calculate_reward
+from env.rules import apply_action
+from env.state import STATE_SIZE, encode_state_for_player
 
 def test_reset_returns_valid_obs():
     env = ExplodingKittensEnv(num_players=3)
     obs, info = env.reset()
-    assert obs.shape == (16,)
+    assert obs.shape == (STATE_SIZE,)
     assert "legal_actions" in info
     assert "all_observations" in info
     assert len(info["all_observations"]) == 3
@@ -62,3 +65,69 @@ def test_rewards_are_bounded_to_normalized_scale():
     terminal_loss = {"terminated": False, "winner": None}
     assert calculate_reward(terminal_win, "anything", acting_player=1) == 1.0
     assert calculate_reward(terminal_loss, "exploded_no_defuse", acting_player=0) == -1.0
+
+
+def test_see_future_marks_kitten_positions_only_for_sf_player():
+    env = ExplodingKittensEnv(num_players=4)
+    env.reset()
+
+    game_state = env.game_state
+    game_state["current_player"] = 0
+    game_state["players"][0].append(CARD_TYPES["SEE_THE_FUTURE"])
+    game_state["players"][1] = [CARD_TYPES["SKIP"]]
+    game_state["players"][2] = [CARD_TYPES["ATTACK"]]
+    game_state["players"][3] = [CARD_TYPES["FAVOR"]]
+    game_state["deck"] = [
+        CARD_TYPES["DEFUSE"],
+        CARD_TYPES["EXPLODING_KITTEN"],
+        CARD_TYPES["SKIP"],
+        CARD_TYPES["EXPLODING_KITTEN"],
+    ]
+
+    event = apply_action(game_state, 6, player_idx=0)
+
+    assert event == "played_see_future"
+    assert game_state["sf_player"] == 0
+    assert game_state["top_three"] == [
+        CARD_TYPES["EXPLODING_KITTEN"],
+        CARD_TYPES["SKIP"],
+        CARD_TYPES["EXPLODING_KITTEN"],
+    ]
+
+    obs_self = encode_state_for_player(game_state, 0)
+    obs_other = encode_state_for_player(game_state, 1)
+
+    assert obs_self[16] == pytest.approx(1.0)
+    assert obs_self[17] == pytest.approx(0.0)
+    assert obs_self[18] == pytest.approx(1.0)
+    assert obs_other[16] == pytest.approx(0.0)
+    assert obs_other[17] == pytest.approx(0.0)
+    assert obs_other[18] == pytest.approx(0.0)
+
+
+def test_see_future_result_clears_after_draw_and_turn_advance():
+    env = ExplodingKittensEnv(num_players=2)
+    env.reset()
+
+    game_state = env.game_state
+    game_state["current_player"] = 0
+    game_state["players"][0].append(CARD_TYPES["SEE_THE_FUTURE"])
+    game_state["players"][1] = [CARD_TYPES["SKIP"]]
+    game_state["deck"] = [
+        CARD_TYPES["ATTACK"],
+        CARD_TYPES["SKIP"],
+        CARD_TYPES["EXPLODING_KITTEN"],
+        CARD_TYPES["FAVOR"],
+    ]
+
+    event = apply_action(game_state, 6, player_idx=0)
+    assert event == "played_see_future"
+    assert game_state["sf_player"] == 0
+    assert game_state["top_three"]
+
+    draw_event = apply_action(game_state, 0, player_idx=0)
+
+    assert draw_event == "drew_safe_card"
+    assert game_state["top_three"] == []
+    assert game_state["sf_player"] is None
+    assert game_state["current_player"] == 1

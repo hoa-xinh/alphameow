@@ -342,7 +342,7 @@ def _resolve_already_spent_action(game_state: dict, pending_action: dict) -> str
         return _resolve_shuffle(game_state)
 
     if action == 6:
-        return _resolve_see_future(game_state)
+        return _resolve_see_future(game_state, player_idx)
 
     if action == 7:
         return _resolve_favor(game_state, player_idx)
@@ -363,6 +363,9 @@ def _draw_card(game_state: dict, player_idx: int) -> str:
     """
     Draw one card for player_idx.
     """
+    game_state["top_three"] = []
+    game_state["sf_player"] = None
+
     if not game_state["deck"]:
         event = _eliminate_player(
             game_state,
@@ -469,12 +472,13 @@ def _resolve_attack(game_state: dict, player_idx: int) -> str:
 
 def _resolve_shuffle(game_state: dict) -> str:
     random.shuffle(game_state["deck"])
-    game_state["top_three"] = None
+    game_state["top_three"] = []
+    game_state["sf_player"] = None
 
     return "played_shuffle"
 
 
-def _resolve_see_future(game_state: dict) -> str:
+def _resolve_see_future(game_state: dict, player_idx: int) -> str:
     top3 = (
         game_state["deck"][-3:]
         if len(game_state["deck"]) >= 3
@@ -482,6 +486,7 @@ def _resolve_see_future(game_state: dict) -> str:
     )
 
     game_state["top_three"] = list(reversed(top3))
+    game_state["sf_player"] = player_idx
 
     return "played_see_future"
 
@@ -650,6 +655,9 @@ def _advance_turn(game_state: dict) -> None:
     """
     if game_state.get("terminated", False):
         return
+
+    game_state["top_three"] = []
+    game_state["sf_player"] = None
 
     next_player = _find_next_alive_player(
         game_state,
