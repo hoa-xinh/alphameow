@@ -89,4 +89,9 @@ class ExplodingKittensEnv(gym.Env):
             "attacks_pending": 0,
             "kitten_just_drawn": False,
             "top_three": None,            # from See the Future
-        }
+            
+            # Added for Nope reaction system
+            "phase": "main",              # "main" or "reaction"
+            "pending_action": None,       # stores action waiting for possible Nope
+            "last_requested_card": None,  # used by cat triple simplified logic
+                    }

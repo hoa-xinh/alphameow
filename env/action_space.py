@@ -14,7 +14,11 @@ ACTIONS = {
     8:  "play_cat_pair",
     9:  "play_cat_triple",
     10: "play_five_diff",
+    11: "pass_nope",
 }
+
+NOPEABLE_ACTIONS = {1, 2, 5, 6, 7, 8, 9, 10}
+PASS_NOPE_ACTION = 11
 
 NUM_ACTIONS = len(ACTIONS)
 
@@ -25,11 +29,32 @@ def get_legal_actions(game_state: dict) -> list[int]:
     from collections import Counter
     from .cards import CARD_TYPES
 
+    
     hand = Counter(game_state["hand"])
     legal = []
 
+    # Added for Nope reaction phase
+    if game_state.get("phase") == "reaction":
+        legal = [PASS_NOPE_ACTION]
+
+        if hand[CARD_TYPES["NOPE"]] > 0:
+            legal.append(4)  # play_nope
+
+        return legal
+
     kitten_just_drawn = game_state.get("kitten_just_drawn", False)
 
+    # If we are waiting for Nope reactions, the only legal actions are:
+    # - pass_nope
+    # - play_nope, if the player has a Nope card
+    if game_state.get("phase") == "reaction":
+        if player_idx != game_state["current_player"]:
+            return []
+    legal = [PASS_NOPE_ACTION]
+    if hand[CARD_TYPES["NOPE"]] > 0:
+        legal.append(4)
+    return legal
+    
     if kitten_just_drawn:
         if hand[CARD_TYPES["DEFUSE"]] > 0:
             legal.append(3)  # play_defuse
@@ -42,6 +67,7 @@ def get_legal_actions(game_state: dict) -> list[int]:
 
     # Always can draw to end turn
     legal.append(0)
+    
 
     if hand[CARD_TYPES["SKIP"]] > 0:           legal.append(1)
     if hand[CARD_TYPES["ATTACK"]] > 0:         legal.append(2)
