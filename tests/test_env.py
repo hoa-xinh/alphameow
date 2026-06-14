@@ -1,11 +1,12 @@
 import pytest
 from env import ExplodingKittensEnv
 from env.rewards import calculate_reward
+from env.state import STATE_SIZE, encode_state_for_player
 
 def test_reset_returns_valid_obs():
     env = ExplodingKittensEnv(num_players=3)
     obs, info = env.reset()
-    assert obs.shape == (13,)
+    assert obs.shape == (STATE_SIZE,)
     assert "legal_actions" in info
     assert "all_observations" in info
     assert len(info["all_observations"]) == 3
@@ -62,3 +63,23 @@ def test_rewards_are_bounded_to_normalized_scale():
     terminal_loss = {"terminated": False, "winner": None}
     assert calculate_reward(terminal_win, "anything", acting_player=1) == 1.0
     assert calculate_reward(terminal_loss, "exploded_no_defuse", acting_player=0) == -1.0
+
+
+def test_observation_includes_relative_opponent_hand_sizes():
+    env = ExplodingKittensEnv(num_players=4)
+    env.reset()
+
+    game_state = env.game_state
+    game_state["players"] = [
+        [1, 2],
+        [3, 4, 5, 6],
+        [7],
+        [8, 9, 10],
+    ]
+    game_state["alive_players"] = [True, True, True, True]
+
+    obs = encode_state_for_player(game_state, 0)
+
+    assert obs[13] == pytest.approx(4 / 12)
+    assert obs[14] == pytest.approx(1 / 12)
+    assert obs[15] == pytest.approx(3 / 12)
