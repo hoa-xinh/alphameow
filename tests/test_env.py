@@ -67,6 +67,27 @@ def test_rewards_are_bounded_to_normalized_scale():
     assert calculate_reward(terminal_loss, "exploded_no_defuse", acting_player=0) == -1.0
 
 
+def test_defensive_nope_is_rewarded():
+    # Player 0 attacks; the attack lands on the next alive player (1).
+    state = {
+        "terminated": False,
+        "winner": None,
+        "players": [[], [], []],
+        "alive_players": [True, True, True],
+        "pending_action": {"action": 2, "player_idx": 0},
+    }
+
+    # Player 1 is the target and Nopes the attack — defensive, rewarded.
+    assert calculate_reward(state, "played_nope", acting_player=1) == 0.03
+
+    # Player 2 is not the target; their Nope falls through to the default.
+    assert calculate_reward(state, "played_nope", acting_player=2) == 0.001
+
+    # A Nope on a non-attack pending action is not a defensive Nope.
+    state["pending_action"] = {"action": 7, "player_idx": 0}
+    assert calculate_reward(state, "played_nope", acting_player=1) == 0.001
+
+
 def test_see_future_marks_kitten_positions_only_for_sf_player():
     env = ExplodingKittensEnv(num_players=4)
     env.reset()
