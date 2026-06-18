@@ -80,12 +80,13 @@ def test_defensive_nope_is_rewarded():
     # Player 1 is the target and Nopes the attack — defensive, rewarded.
     assert calculate_reward(state, "played_nope", acting_player=1) == 0.03
 
-    # Player 2 is not the target; their Nope falls through to the default.
-    assert calculate_reward(state, "played_nope", acting_player=2) == 0.001
+    # Player 2 is not the target; the Nope is wasted — penalized.
+    assert calculate_reward(state, "played_nope", acting_player=2) == -0.005
 
-    # A Nope on a non-attack pending action is not a defensive Nope.
+    # A Nope on a non-attack pending action is wasted (favor is random-target,
+    # so it can never be a known self-defense) — penalized.
     state["pending_action"] = {"action": 7, "player_idx": 0}
-    assert calculate_reward(state, "played_nope", acting_player=1) == 0.001
+    assert calculate_reward(state, "played_nope", acting_player=1) == -0.005
 
 
 def test_see_future_marks_kitten_positions_only_for_sf_player():

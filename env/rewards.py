@@ -58,9 +58,11 @@ def calculate_reward(game_state: dict, event: str, acting_player: int) -> float:
                   "played_cat_triple", "played_five_diff"):
         return +0.03     # stole a card — especially good if it's a defuse
 
-    # === REACTION: defensive Nope ===
-    if event == "played_nope" and _nope_defended_self(game_state, acting_player):
-        return +0.03     # noped an attack aimed at you — saved your own turn
+    # === REACTION: Nope ===
+    if event == "played_nope":
+        if _nope_defended_self(game_state, acting_player):
+            return +0.03     # noped an attack aimed at you — saved your own turn
+        return -0.005        # wasted Nope — burned off-target, discourage farming
 
     # === ILLEGAL / WASTED ACTIONS ===
     if event in ("defuse_played_illegally", "favor_no_target",
