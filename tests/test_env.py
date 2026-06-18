@@ -88,6 +88,42 @@ def test_defensive_nope_is_rewarded():
     assert calculate_reward(state, "played_nope", acting_player=1) == 0.001
 
 
+def test_reaction_context_features_flag_pending_attack_target():
+    env = ExplodingKittensEnv(num_players=3)
+    env.reset()
+
+    game_state = env.game_state
+    game_state["alive_players"] = [True, True, True]
+    game_state["phase"] = "reaction"
+    game_state["reaction_player"] = 1
+    # Player 0 attacked; the attack lands on the next alive player (1).
+    game_state["pending_action"] = {"action": 2, "player_idx": 0}
+
+    obs_target = encode_state_for_player(game_state, 1)
+    assert obs_target[19] == pytest.approx(1.0)  # attack pending
+    assert obs_target[20] == pytest.approx(1.0)  # I'm the target
+    assert obs_target[21] == pytest.approx(1.0)  # my turn to react
+
+    obs_other = encode_state_for_player(game_state, 2)
+    assert obs_other[19] == pytest.approx(1.0)   # attack still pending
+    assert obs_other[20] == pytest.approx(0.0)   # not the target
+    assert obs_other[21] == pytest.approx(0.0)   # not the reaction player
+
+
+def test_reaction_context_clear_without_pending_attack():
+    env = ExplodingKittensEnv(num_players=3)
+    env.reset()
+
+    game_state = env.game_state
+    game_state["pending_action"] = None
+    game_state["phase"] = "main"
+
+    obs = encode_state_for_player(game_state, 0)
+    assert obs[19] == pytest.approx(0.0)
+    assert obs[20] == pytest.approx(0.0)
+    assert obs[21] == pytest.approx(0.0)
+
+
 def test_see_future_marks_kitten_positions_only_for_sf_player():
     env = ExplodingKittensEnv(num_players=4)
     env.reset()
